@@ -45,38 +45,35 @@ namespace Modulo
         private static string Do(Question question)
         {
             string result = string.Empty;
-            Stack<string> road = new Stack<string>();
-            question.piecesArray = question.piecesArray.Reverse().ToArray();
-            int pieceIndex = question.piecesArray.Length - 1;
-            if (Test(question.mapArray, question.mapArray.Length, question.mapArray[0].Length, question.modu, question.modu - 1, question.piecesArray, pieceIndex, question.piecesArray[pieceIndex].Length, question.piecesArray[pieceIndex][0].Length, 0, question.addCountLimit, road))
+            string[] road = new string[question.pieceArray.Length];
+            int pieceIndex = question.pieceArray.Length - 1;
+            if (Test(question.mapArray, question.mapArray.Length, question.mapArray[0].Length, question.modu, question.modu - 1, question.pieceArray.OrderByDescending(o => o.num).ThenBy(o => o.value).ToArray(), pieceIndex, 0, question.addCountLimit, road))
             {
-                while (road.Any())
-                {
-                    result += road.Pop();
-                }
+                result = string.Join(string.Empty, road);
             }
             return result;
         }
 
-        private static bool Test(int[][] map, int mapx, int mapy, int modu, int moduLimit, int[][][] pieces, int pieceIndex, int piecex, int piecey, int addCount, int addCountLimit, Stack<string> road)
+        private static bool Test(int[][] map, int mapx, int mapy, int modu, int moduLimit, Piece[] pieces, int pieceIndex, int addCount, int addCountLimit, string[] road)
         {
-            int[][] piece = pieces[pieceIndex];
+            Piece currentPiece = pieces[pieceIndex];
+            bool[][] piece = currentPiece.piece;
             if (pieceIndex > 0)
             {
                 pieceIndex--;
-                int piecexNew = pieces[pieceIndex].Length, pieceyNew = pieces[pieceIndex][0].Length;
-                for (int i = mapx - piecex; i >= 0; i--)
+                for (int i = mapx - currentPiece.x; i >= 0; i--)
                 {
-                    for (int j = mapy - piecey; j >= 0; j--)
+                    for (int j = mapy - currentPiece.y; j >= 0; j--)
                     {
                         int copyCount = addCount;
-                        for (int r = piecex - 1; r >= 0; r--)
+                        for (int r = currentPiece.x - 1; r >= 0; r--)
                         {
-                            for (int s = piecey - 1; s >= 0; s--)
+                            int x = i + r;
+                            for (int s = currentPiece.y - 1; s >= 0; s--)
                             {
-                                if (piece[r][s] == 1)
+                                if (piece[r][s])
                                 {
-                                    int x = i + r, y = j + s;
+                                    int y = j + s;
                                     if (map[x][y] == moduLimit)
                                     {
                                         map[x][y] = 0;
@@ -91,19 +88,20 @@ namespace Modulo
                         }
                         if (copyCount <= addCountLimit)
                         {
-                            if (Test(map, mapx, mapy, modu, moduLimit, pieces, pieceIndex, piecexNew, pieceyNew, copyCount, addCountLimit, road))
+                            if (Test(map, mapx, mapy, modu, moduLimit, pieces, pieceIndex, copyCount, addCountLimit, road))
                             {
-                                road.Push(string.Format("{0}{1}", i, j));
+                                road[currentPiece.id] = string.Format("{0}{1}", i, j);
                                 return true;
                             }
                         }
-                        for (int r = piecex - 1; r >= 0; r--)
+                        for (int r = currentPiece.x - 1; r >= 0; r--)
                         {
-                            for (int s = piecey - 1; s >= 0; s--)
+                            int x = i + r;
+                            for (int s = currentPiece.y - 1; s >= 0; s--)
                             {
-                                if (piece[r][s] == 1)
+                                if (piece[r][s])
                                 {
-                                    int x = i + r, y = j + s;
+                                    int y = j + s;
                                     if (map[x][y] == 0)
                                     {
                                         map[x][y] = moduLimit;
@@ -120,50 +118,51 @@ namespace Modulo
             }
             else
             {
-                for (int i = mapx - piecex; i >= 0; i--)
+                for (int i = mapx - currentPiece.x; i >= 0; i--)
                 {
-                    for (int j = mapy - piecey; j >= 0; j--)
+                    for (int j = mapy - currentPiece.y; j >= 0; j--)
                     {
-                        for (int r = piecex - 1; r >= 0; r--)
+                        int copyCount = addCount;
+                        for (int r = currentPiece.x - 1; r >= 0; r--)
                         {
-                            for (int s = piecey - 1; s >= 0; s--)
+                            int x = i + r;
+                            for (int s = currentPiece.y - 1; s >= 0; s--)
                             {
-                                if (piece[r][s] == 1)
+                                if (piece[r][s])
                                 {
-                                    if (map[i + r][j + s] == moduLimit)
+                                    int y = j + s;
+                                    if (map[x][y] == moduLimit)
                                     {
-                                        map[i + r][j + s] = 0;
+                                        map[x][y] = 0;
                                     }
                                     else
                                     {
-                                        map[i + r][j + s]++;
-                                        addCount++;
+                                        map[x][y]++;
+                                        copyCount++;
                                     }
                                 }
                             }
                         }
-                        if (addCount == addCountLimit)
+                        if (copyCount <= addCountLimit)
                         {
-                            if (Over(map, mapx, mapy))
-                            {
-                                road.Push(string.Format("{0}{1}", i, j));
-                                return true;
-                            }
+                            road[currentPiece.id] = string.Format("{0}{1}", i, j);
+                            return true;
                         }
-                        for (int r = piecex - 1; r >= 0; r--)
+                        for (int r = currentPiece.x - 1; r >= 0; r--)
                         {
-                            for (int s = piecey - 1; s >= 0; s--)
+                            int x = i + r;
+                            for (int s = currentPiece.y - 1; s >= 0; s--)
                             {
-                                if (piece[r][s] == 1)
+                                if (piece[r][s])
                                 {
-                                    if (map[i + r][j + s] == 0)
+                                    int y = j + s;
+                                    if (map[x][y] == 0)
                                     {
-                                        map[i + r][j + s] = moduLimit;
+                                        map[x][y] = moduLimit;
                                     }
                                     else
                                     {
-                                        map[i + r][j + s]--;
-                                        addCount--;
+                                        map[x][y]--;
                                     }
                                 }
                             }
@@ -172,21 +171,6 @@ namespace Modulo
                 }
             }
             return false;
-        }
-
-        private static bool Over(int[][] map, int mapx, int mapy)
-        {
-            for (int i = 0; i < mapx; i++)
-            {
-                for (int j = 0; j < mapy; j++)
-                {
-                    if (map[i][j] != 0)
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
         }
     }
 
@@ -197,7 +181,7 @@ namespace Modulo
         public string[] map { get; set; }
         public int[][] mapArray { get; set; }
         public string[] pieces { get; set; }
-        public int[][][] piecesArray { get; set; }
+        public Piece[] pieceArray { get; set; }
         public int piecesValue { get; set; }
         public int mapValue { get; set; }
         public int addCountLimit { get; set; }
@@ -215,26 +199,42 @@ namespace Modulo
                     mapValue += mapArray[i][j];
                 }
             }
-            piecesArray = new int[pieces.Length][][];
+            pieceArray = new Piece[pieces.Length];
             for (int i = 0; i < pieces.Length; i++)
             {
-                string[] piece = pieces[i].Split(',');
-                int piecex = piece.Length, piecey = piece[0].Length;
-                piecesArray[i] = new int[piecex][];
-                for (int j = 0; j < piecex; j++)
+                string[] pieceStr = pieces[i].Split(',');
+                Piece piece = new Piece();
+                piece.id = i;
+                piece.x = pieceStr.Length;
+                piece.y = pieceStr[0].Length;
+                piece.num = (mapx - piece.x + 1) * (mapy - piece.y + 1);
+                piece.piece = new bool[piece.x][];
+                for (int j = 0; j < piece.x; j++)
                 {
-                    piecesArray[i][j] = new int[piecey];
-                    for (int k = 0; k < piecey; k++)
+                    piece.piece[j] = new bool[piece.y];
+                    for (int k = 0; k < piece.y; k++)
                     {
-                        if (piece[j][k] == 'X')
+                        if (pieceStr[j][k] == 'X')
                         {
-                            piecesArray[i][j][k] = 1;
-                            piecesValue++;
+                            piece.piece[j][k] = true;
+                            piece.value++;
                         }
                     }
                 }
+                pieceArray[i] = piece;
             }
-            addCountLimit = (3 * piecesValue - mapValue) / modu;
+            piecesValue = pieceArray.Sum(o => o.value);
+            addCountLimit = ((modu - 1) * piecesValue - mapValue) / modu;
         }
+    }
+
+    public class Piece
+    {
+        public bool[][] piece { get; set; }
+        public int x { get; set; }
+        public int y { get; set; }
+        public int value { get; set; }
+        public int id { get; set; }
+        public int num { get; set; }
     }
 }
