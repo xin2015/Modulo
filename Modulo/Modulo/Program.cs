@@ -10,7 +10,8 @@ namespace Modulo
     {
         static void Main(string[] args)
         {
-            Solve.Auto();
+            Modulo modulo = new Modulo();
+            modulo.Auto();
         }
     }
 }
