@@ -110,6 +110,7 @@ namespace Modulo
             {
                 Piece currentPiece = pieces[h];
                 bool[][] piece = currentPiece.piece;
+                currentPiece.points = new List<int>();
                 for (int i = x - currentPiece.x; i >= 0; i--)
                 {
                     for (int j = y - currentPiece.y; j >= 0; j--)
@@ -122,7 +123,12 @@ namespace Modulo
                                 if (piece[r][s])
                                 {
                                     int b = j + s;
-                                    pieceMap[a][b][h] = true;
+                                    if (!pieceMap[a][b][h])
+                                    {
+                                        pieceMap[a][b][h] = true;
+                                        currentPiece.points.Add(a);
+                                        currentPiece.points.Add(b);
+                                    }
                                 }
                             }
                         }
@@ -227,25 +233,24 @@ namespace Modulo
                         if (copyAddCount <= addCountLimit)
                         {
                             bool prune = true;
-                            for(int t = 0; t < x&&prune; t++)
+                            for (int t = currentPiece.points.Count - 1; t > 0; t -= 2)
                             {
-                                for(int u = 0; u < y; u++)
+                                int a = currentPiece.points[t - 1];
+                                int b = currentPiece.points[t];
+                                if (map[a][b] != 0)
                                 {
-                                    if (map[t][u] != 0)
+                                    int count = 0;
+                                    for (int u = pieceIndex; u >= 0; u--)
                                     {
-                                        int count = 0;
-                                        for(int v = pieceIndex; v >= 0; v--)
+                                        if (pieceMap[a][b][u])
                                         {
-                                            if (pieceMap[t][u][v])
-                                            {
-                                                count++;
-                                            }
+                                            count++;
                                         }
-                                        if (count < modu - map[t][u])
-                                        {
-                                            prune = false;
-                                            break;
-                                        }
+                                    }
+                                    if (count < modu - map[a][b])
+                                    {
+                                        prune = false;
+                                        break;
                                     }
                                 }
                             }
@@ -300,5 +305,6 @@ namespace Modulo
         public int value { get; set; }
         public int id { get; set; }
         public int num { get; set; }
+        public List<int> points { get; set; }
     }
 }
