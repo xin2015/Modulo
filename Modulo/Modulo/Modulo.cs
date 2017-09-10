@@ -21,6 +21,7 @@ namespace Modulo
         int pieceValueSum;
         int mapValue;
         int addCountLimit;
+        bool[][][] pieceMap;
 
         public Modulo()
         {
@@ -34,7 +35,7 @@ namespace Modulo
                 HttpHelper hh = new HttpHelper();
                 HttpItem hi = new HttpItem()
                 {
-                    Cookie = "laravel_session=eyJpdiI6IndMMzNOeGpERVllY0lkWVlzTDBLQVE9PSIsInZhbHVlIjoiWnZ6bW1tZTFBZUM0dlF3MHlWcXNSeGxYUWJEa3dOOE1EYjFFMjFiTFU5ZnpiT29maVFqQmRKRVc2bjVsT3VmS1FMbTZ1MjNGTlppUHVpMFU1N1dcL3FBPT0iLCJtYWMiOiI5NTc1M2E3NDdmMTU4Yzc0NjVjMGUzNjUzNjBlMDAzY2NkMmQ2NjE2ZTFjOGJiNmY1MTdiOThhNTA0YzQ1MjIyIn0"
+                    Cookie = "laravel_session=eyJpdiI6ImNuaXNRN2NcLzBOdCtlOGsza3lBMXBnPT0iLCJ2YWx1ZSI6ImFSTTRlZHRPSTJqZHYyS1VXV0xLTW5GQlc2S1RtQVVudUFKNmhvUWs2S2ZvcE9tZ2FTZTRVMDl5K0VxblJPY3hWQVN6KzlQWEpBZ0pCNEpacVEwS2FnPT0iLCJtYWMiOiI3NWUyODk0ODUwOWNiZWNkNDhlYzBiOGVhNmNiZDEyZTRhYWRjZTUzOGY0ZDQ5Mzc3NDZlNzcwZDg3NWUwNTg0In0"
                 };
                 HttpResult hr;
                 JavaScriptSerializer jss = new JavaScriptSerializer();
@@ -66,13 +67,16 @@ namespace Modulo
             x = question.map.Length;
             y = question.map[0].Length;
             map = new int[x][];
+            pieceMap = new bool[x][][];
             for (int i = 0; i < x; i++)
             {
                 map[i] = new int[y];
+                pieceMap[i] = new bool[y][];
                 for (int j = 0; j < y; j++)
                 {
                     map[i][j] = int.Parse(question.map[i][j].ToString());
                     mapValue += map[i][j];
+                    pieceMap[i][j] = new bool[question.pieces.Length];
                 }
             }
             pieces = new Piece[question.pieces.Length];
@@ -102,6 +106,29 @@ namespace Modulo
             pieces = pieces.OrderByDescending(o => o.num).ThenBy(o => o.value).ToArray();
             pieceValueSum = pieces.Sum(o => o.value);
             addCountLimit = ((modu - 1) * pieceValueSum - mapValue) / modu;
+            for (int h = 0; h < pieces.Length; h++)
+            {
+                Piece currentPiece = pieces[h];
+                bool[][] piece = currentPiece.piece;
+                for (int i = x - currentPiece.x; i >= 0; i--)
+                {
+                    for (int j = y - currentPiece.y; j >= 0; j--)
+                    {
+                        for (int r = 0; r < currentPiece.x; r++)
+                        {
+                            int a = i + r;
+                            for (int s = 0; s < currentPiece.y; s++)
+                            {
+                                if (piece[r][s])
+                                {
+                                    int b = j + s;
+                                    pieceMap[a][b][h] = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             string[] road = new string[pieces.Length];
             int pieceIndex = pieces.Length - 1;
             if (Do(pieceIndex, 0, road))
@@ -199,10 +226,36 @@ namespace Modulo
                         }
                         if (copyAddCount <= addCountLimit)
                         {
-                            if (Do(pieceIndex, copyAddCount, road))
+                            bool prune = true;
+                            for(int t = 0; t < x&&prune; t++)
                             {
-                                road[currentPiece.id] = string.Format("{0}{1}", i, j);
-                                return true;
+                                for(int u = 0; u < y; u++)
+                                {
+                                    if (map[t][u] != 0)
+                                    {
+                                        int count = 0;
+                                        for(int v = pieceIndex; v >= 0; v--)
+                                        {
+                                            if (pieceMap[t][u][v])
+                                            {
+                                                count++;
+                                            }
+                                        }
+                                        if (count < modu - map[t][u])
+                                        {
+                                            prune = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (prune)
+                            {
+                                if (Do(pieceIndex, copyAddCount, road))
+                                {
+                                    road[currentPiece.id] = string.Format("{0}{1}", i, j);
+                                    return true;
+                                }
                             }
                         }
                         for (int r = 0; r < currentPiece.x; r++)
